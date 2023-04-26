@@ -1,7 +1,7 @@
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 
 
 def extract(coef, time, n_dims):
@@ -9,12 +9,6 @@ def extract(coef, time, n_dims):
     while coef_t.dim() < n_dims:
         coef_t = coef_t.unsqueeze(-1)
     return coef_t
-
-
-from tqdm import tqdm
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 
 class GaussianDiffusion(nn.Module):
@@ -28,20 +22,15 @@ class GaussianDiffusion(nn.Module):
         alpha_cumprod = torch.cumprod(alpha, dim=0)
         alpha_cumprod_prev = torch.cat([torch.ones(1), alpha_cumprod[:-1]], dim=0)
 
-
         self.register_buffer('sqrt_alpha_cumprod', torch.sqrt(alpha_cumprod))
         self.register_buffer('sqrt_one_minus_alpha_cumprod', torch.sqrt(1 - alpha_cumprod))
-
-
         self.register_buffer('sqrt_alpha', torch.sqrt(alpha))
         self.register_buffer('eps_coef', beta / - torch.sqrt(1 - alpha_cumprod))
 
-        
         if posterior_var_type == 'beta':
             self.register_buffer('posterior_var', beta)
         elif posterior_var_type == 'beta_tilde':
             self.register_buffer('posterior_var', beta * (1 - alpha_cumprod_prev) / (1 - alpha_cumprod))
-
 
     def q_sample(self, x, time, noise=None):
         if noise is None:
@@ -52,7 +41,6 @@ class GaussianDiffusion(nn.Module):
 
         return x_coef * x + noise_coef * noise
     
-
     def training_loss(self, model, x):
         time = torch.randint(0, self.n_timesteps, (x.shape[0],), device=x.device)
         noise = torch.randn_like(x)
@@ -62,7 +50,6 @@ class GaussianDiffusion(nn.Module):
 
         return loss
     
-
     def posterior_mean(self, model, x, time):
         eps = model(x, time)
         eps_coef = extract(self.eps_coef, time, eps.dim())
